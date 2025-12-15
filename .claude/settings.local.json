@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"e:/Study/Flutter SDK/flutter/bin/flutter\" analyze)",
+      "Bash(\"e:/Study/Flutter SDK/flutter/bin/flutter\" pub get)",
+      "Bash(\"e:/Study/Flutter SDK/flutter/bin/flutter\" devices)",
+      "Bash(\"e:/Study/Flutter SDK/flutter/bin/flutter\" build apk --release)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd 5 advanced features + Codemagic config\n\n✅ Phase 3: Search functionality\n- Search trong todos, descriptions, nested checklists\n- Realtime search bar với clear button\n\n✅ Phase 4: Reminders & Notifications\n- Due date picker với date + time\n- Local notifications trước 1 giờ\n- Status colors: green/orange/red\n- Automatic scheduling/canceling\n\n✅ Phase 5: Nested Subtasks\n- 3 levels nesting\n- Expand/collapse UI\n- Recursive completion tracking\n- Add subtask dialog\n\n📚 Documentation:\n- SETUP_CODEMAGIC.md - Step-by-step Codemagic guide\n- CLOUD_BUILD_OPTIONS.md - Service comparison\n- BUILD_IOS_INSTRUCTIONS.md - macOS build guide\n- QUICKSTART_IOS.md - Fast iOS build\n- README_BUILD.md - General build guide\n- DEPLOYMENT_SUMMARY.md - Deployment overview\n\n🔧 Configuration:\n- codemagic.yaml - CI/CD config for iOS & Android\n- Updated README.md with features & docs\n\nAll 5 features implemented and tested!\nEOF\n)\")"
+    ]
+  }
+}
