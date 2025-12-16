@@ -38,7 +38,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - codegym@example.com  # Change to your email
+          - giatufutoi@gmail.com
         notify:
           success: true
           failure: true
@@ -67,7 +67,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - codegym@example.com  # Change to your email
+          - giatufutoi@gmail.com
         notify:
           success: true
           failure: true
