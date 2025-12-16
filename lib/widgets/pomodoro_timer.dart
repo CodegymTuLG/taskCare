@@ -61,7 +61,9 @@ class _PomodoroTimerState extends State<PomodoroTimer> {
     _timer?.cancel();
     setState(() {
       _isRunning = false;
-      _timeRemaining = _isWorkSession ? workDuration : _getBreakDuration();
+      _isWorkSession = true;
+      _timeRemaining = workDuration;
+      _completedSessions = 0;
     });
   }
 

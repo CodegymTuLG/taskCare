@@ -1141,8 +1141,9 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
                               padding: const EdgeInsets.all(10),
@@ -1151,18 +1152,6 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(Icons.add_task, color: Colors.white, size: 24),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Text(
-                                _loc.translate('add_task_title'),
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
                             ),
                             IconButton(
                               onPressed: () => Navigator.pop(context),
@@ -1312,7 +1301,6 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                           // Priority Section
                           _buildSectionCard(
                             icon: Icons.flag_outlined,
-                            title: _loc.translate('priority_label').replaceAll(':', ''),
                             themeColor: themeColor,
                             child: Row(
                               children: [
@@ -1330,7 +1318,6 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                           // Category Section
                           _buildSectionCard(
                             icon: Icons.category_outlined,
-                            title: _loc.translate('category_label').replaceAll(':', ''),
                             themeColor: themeColor,
                             child: CategoryPicker(
                               selectedCategory: _selectedCategory,
@@ -1375,32 +1362,37 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                                       ],
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
-                                            Icon(Icons.schedule_outlined, color: themeColor, size: 20),
-                                            const SizedBox(width: 8),
-                                            Text(_loc.translate('due_date_label').replaceAll(':', ''), style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-                                            const Spacer(),
-                                            if (_selectedDueDate != null)
+                                            Icon(Icons.schedule_outlined, color: themeColor, size: 24),
+                                            if (_selectedDueDate != null) ...[
+                                              const SizedBox(width: 8),
                                               GestureDetector(
                                                 onTap: () => setModalState(() => _selectedDueDate = null),
-                                                child: Icon(Icons.close, size: 18, color: Colors.grey.shade400),
+                                                child: Icon(Icons.close, size: 16, color: Colors.grey.shade400),
                                               ),
+                                            ],
                                           ],
                                         ),
-                                        const SizedBox(height: 8),
+                                        const SizedBox(height: 6),
                                         Text(
                                           _selectedDueDate == null
-                                              ? _loc.translate('due_date_set')
-                                              : '${_selectedDueDate!.day}/${_selectedDueDate!.month} ${_selectedDueDate!.hour.toString().padLeft(2, '0')}:${_selectedDueDate!.minute.toString().padLeft(2, '0')}',
+                                              ? '--/--'
+                                              : '${_selectedDueDate!.day}/${_selectedDueDate!.month}',
                                           style: TextStyle(
-                                            fontSize: 15,
+                                            fontSize: 14,
                                             fontWeight: FontWeight.w600,
                                             color: _selectedDueDate == null ? Colors.grey.shade400 : Colors.grey.shade800,
                                           ),
                                         ),
+                                        if (_selectedDueDate != null)
+                                          Text(
+                                            '${_selectedDueDate!.hour.toString().padLeft(2, '0')}:${_selectedDueDate!.minute.toString().padLeft(2, '0')}',
+                                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                          ),
                                       ],
                                     ),
                                   ),
@@ -1444,19 +1436,8 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                                               ),
                                             ],
                                           )
-                                        : Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.image_outlined, color: themeColor, size: 20),
-                                                  const SizedBox(width: 8),
-                                                  Text(_loc.translate('add_image'), style: TextStyle(fontSize: 13, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text('Tap to add', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey.shade400)),
-                                            ],
+                                        : Center(
+                                            child: Icon(Icons.add_photo_alternate_outlined, color: themeColor, size: 40),
                                           ),
                                   ),
                                 ),
@@ -1467,7 +1448,6 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                           // Checklist Section
                           _buildSectionCard(
                             icon: Icons.checklist_outlined,
-                            title: _loc.translate('checklist_label').replaceAll(':', ''),
                             themeColor: themeColor,
                             trailing: IconButton(
                               onPressed: () {
@@ -1570,13 +1550,12 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
 
   Widget _buildSectionCard({
     required IconData icon,
-    required String title,
     required Color themeColor,
     required Widget child,
     Widget? trailing,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1594,20 +1573,11 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
           Row(
             children: [
               Icon(icon, color: themeColor, size: 20),
-              const SizedBox(width: 10),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey.shade700,
-                ),
-              ),
               const Spacer(),
               if (trailing != null) trailing,
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           child,
         ],
       ),
@@ -1641,13 +1611,20 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(_loc.translate('theme_color')),
+        contentPadding: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         content: SizedBox(
-          width: 280,
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: colors.map((color) {
+          width: 240,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: colors.length,
+            itemBuilder: (context, index) {
+              final color = colors[index];
               final isSelected = widget.themeColor == color;
               return GestureDetector(
                 onTap: () {
@@ -1655,8 +1632,6 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                   Navigator.pop(context);
                 },
                 child: Container(
-                  width: 45,
-                  height: 45,
                   decoration: BoxDecoration(
                     color: color,
                     shape: BoxShape.circle,
@@ -1666,7 +1641,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                     boxShadow: [
                       BoxShadow(
                         color: color.withValues(alpha: 0.4),
-                        blurRadius: 8,
+                        blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -1676,7 +1651,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                       : null,
                 ),
               );
-            }).toList(),
+            },
           ),
         ),
       ),
