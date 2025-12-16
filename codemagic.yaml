@@ -9,8 +9,8 @@ workflows:
       xcode: latest
 
       vars:
-        # Set your app bundle ID here
-        BUNDLE_ID: "com.yourname.todoapp"
+        # Bundle ID for the app - change this if needed
+        BUNDLE_ID: "com.codegym.taskcare"
 
     scripts:
       - name: Set up code signing settings on Xcode project
@@ -38,7 +38,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - codegym@example.com  # Change to your email
         notify:
           success: true
           failure: true
@@ -67,7 +67,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - codegym@example.com  # Change to your email
         notify:
           success: true
           failure: true
