@@ -7,6 +7,8 @@ import 'models/category.dart';
 import 'services/storage_service.dart';
 import 'services/search_service.dart';
 import 'services/notification_service.dart';
+import 'services/biometric_service.dart';
+import 'services/voice_input_service.dart';
 import 'widgets/category_picker.dart';
 import 'widgets/nested_checklist.dart';
 
@@ -83,6 +85,12 @@ class AppLocalizations {
       'hours_short': 'giờ',
       'minutes_short': 'phút',
       'days_short': 'ngày',
+      'voice_input': 'Nhập giọng nói',
+      'voice_listening': 'Đang nghe...',
+      'voice_not_available': 'Không hỗ trợ nhập giọng nói',
+      'biometric_required': 'Xác thực để hoàn thành',
+      'biometric_failed': 'Xác thực thất bại',
+      'biometric_not_available': 'Thiết bị không hỗ trợ xác thực sinh trắc',
     },
     'en': {
       'app_title': 'Task Manager',
@@ -139,6 +147,12 @@ class AppLocalizations {
       'hours_short': 'h',
       'minutes_short': 'm',
       'days_short': 'd',
+      'voice_input': 'Voice input',
+      'voice_listening': 'Listening...',
+      'voice_not_available': 'Voice input not available',
+      'biometric_required': 'Authenticate to complete',
+      'biometric_failed': 'Authentication failed',
+      'biometric_not_available': 'Biometric not supported',
     },
     'ja': {
       'app_title': 'タスク管理',
@@ -195,6 +209,12 @@ class AppLocalizations {
       'hours_short': '時間',
       'minutes_short': '分',
       'days_short': '日',
+      'voice_input': '音声入力',
+      'voice_listening': '聞いています...',
+      'voice_not_available': '音声入力は利用できません',
+      'biometric_required': '完了するには認証が必要',
+      'biometric_failed': '認証に失敗しました',
+      'biometric_not_available': '生体認証はサポートされていません',
     },
   };
 
@@ -271,6 +291,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
   Timer? _saveTimer;
   late StorageService _storage;
   String _searchQuery = '';
+  bool _isListening = false;
 
   AppLocalizations get _loc => AppLocalizations(widget.languageCode);
 
@@ -343,6 +364,41 @@ class _TodoHomePageState extends State<TodoHomePage> {
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 300), () {
       _storage.saveTodos(_todos);
+    });
+  }
+
+  Future<void> _startVoiceInput(TextEditingController controller) async {
+    final isAvailable = await VoiceInputService.isAvailable();
+    if (!isAvailable) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_loc.translate('voice_not_available')),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isListening = true;
+    });
+
+    await VoiceInputService.startListening(
+      onResult: (text) {
+        setState(() {
+          controller.text = text;
+        });
+      },
+      localeId: VoiceInputService.getLocaleId(widget.languageCode),
+    );
+  }
+
+  Future<void> _stopVoiceInput() async {
+    await VoiceInputService.stopListening();
+    setState(() {
+      _isListening = false;
     });
   }
 
@@ -433,7 +489,27 @@ class _TodoHomePageState extends State<TodoHomePage> {
     );
   }
 
-  void _toggleTodo(int index) {
+  Future<void> _toggleTodo(int index) async {
+    final todo = _todos[index];
+
+    // If marking as complete, require biometric authentication
+    if (!todo.isCompleted) {
+      final authenticated = await BiometricService.authenticateToCompleteTask(todo.title);
+
+      if (!authenticated) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(_loc.translate('biometric_failed')),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     setState(() {
       _todos[index].isCompleted = !_todos[index].isCompleted;
     });
@@ -1346,8 +1422,12 @@ class _TodoHomePageState extends State<TodoHomePage> {
                         child: TextField(
                           controller: _quickAddController,
                           decoration: InputDecoration(
-                            hintText: _loc.translate('quick_add_hint'),
-                            hintStyle: TextStyle(color: Colors.grey.shade400),
+                            hintText: _isListening
+                                ? _loc.translate('voice_listening')
+                                : _loc.translate('quick_add_hint'),
+                            hintStyle: TextStyle(
+                              color: _isListening ? Colors.red.shade400 : Colors.grey.shade400,
+                            ),
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           ),
@@ -1356,11 +1436,30 @@ class _TodoHomePageState extends State<TodoHomePage> {
                           style: const TextStyle(fontSize: 15),
                         ),
                       ),
+                      // Voice input button
+                      InkWell(
+                        onTap: () {
+                          if (_isListening) {
+                            _stopVoiceInput();
+                          } else {
+                            _startVoiceInput(_quickAddController);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(
+                            _isListening ? Icons.mic_off : Icons.mic,
+                            color: _isListening ? Colors.red : Colors.grey.shade600,
+                            size: 24,
+                          ),
+                        ),
+                      ),
                       Container(
                         width: 1,
                         height: 24,
                         color: Colors.grey.shade300,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
                       ),
                       InkWell(
                         onTap: _quickAddTodo,

@@ -72,6 +72,8 @@ class StorageService {
     try {
       final jsonList = todos.map((todo) => todo.toJson()).toList();
       await _box!.put(_todosKey, jsonList);
+      // Flush to ensure data is written to disk immediately
+      await _box!.flush();
     } catch (e) {
       print('Error saving todos: $e');
       rethrow;

@@ -50,6 +50,12 @@ dependencies:
   timezone: ^0.9.3
   permission_handler: ^11.3.0
 
+  # Voice Input
+  speech_to_text: ^6.6.0
+
+  # Biometric Authentication (Face ID / Fingerprint)
+  local_auth: ^2.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
