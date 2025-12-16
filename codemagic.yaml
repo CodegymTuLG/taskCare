@@ -20,14 +20,14 @@ workflows:
           pod repo update
           pod install
 
-      - name: Build iOS Debug
+      - name: Build iOS Release for Device
         script: |
-          flutter build ios --debug --no-codesign
-          cd build/ios/iphonesimulator || cd build/ios/iphoneos
+          flutter build ios --release --no-codesign
+          cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
-          zip -r Runner-debug.ipa Payload
-          mv Runner-debug.ipa $CM_BUILD_DIR/
+          zip -r Runner.ipa Payload
+          mv Runner.ipa $CM_BUILD_DIR/
 
     artifacts:
       - '*.ipa'
