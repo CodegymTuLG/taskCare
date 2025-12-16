@@ -1,39 +1,41 @@
 workflows:
-  ios-release:
-    name: iOS Release Build
+  ios-development:
+    name: iOS Development Build
     max_build_duration: 60
     instance_type: mac_mini_m1
 
     environment:
       flutter: stable
       xcode: latest
-
-      vars:
-        # Bundle ID for the app - change this if needed
-        BUNDLE_ID: "com.codegym.taskcare"
+      cocoapods: default
 
     scripts:
-      - name: Set up code signing settings on Xcode project
-        script: |
-          xcode-project use-profiles
-
       - name: Get Flutter packages
         script: |
           flutter pub get
 
       - name: Install CocoaPods dependencies
         script: |
-          cd ios && pod install
+          cd ios
+          pod repo update
+          pod install
 
-      - name: Build IPA
+      - name: Build iOS app
         script: |
-          flutter build ipa --release \
-            --export-options-plist=$HOME/export_options.plist
+          flutter build ios --release --no-codesign
+
+      - name: Package IPA
+        script: |
+          cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r app-release.ipa Payload
+          mv app-release.ipa $CM_BUILD_DIR/
 
     artifacts:
+      - '*.ipa'
+      - build/ios/iphoneos/*.ipa
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
 
     publishing:
       email:
