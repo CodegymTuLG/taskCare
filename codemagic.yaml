@@ -1,6 +1,6 @@
 workflows:
-  ios-signed:
-    name: iOS Signed Build
+  ios-debug:
+    name: iOS Debug Build (For Sideload)
     max_build_duration: 60
     instance_type: mac_mini_m1
 
@@ -8,8 +8,6 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      groups:
-        - app_store_credentials
 
     scripts:
       - name: Get Flutter packages
@@ -22,29 +20,18 @@ workflows:
           pod repo update
           pod install
 
-      - name: Set up keychain
+      - name: Build iOS Debug
         script: |
-          keychain initialize
-
-      - name: Fetch signing files
-        script: |
-          app-store-connect fetch-signing-files "com.codegym.taskcare" \
-            --type IOS_APP_DEVELOPMENT \
-            --create
-
-      - name: Set up signing
-        script: |
-          keychain add-certificates
-          xcode-project use-profiles
-
-      - name: Build iOS IPA
-        script: |
-          flutter build ipa --release \
-            --export-options-plist=/Users/builder/export_options.plist
+          flutter build ios --debug --no-codesign
+          cd build/ios/iphonesimulator || cd build/ios/iphoneos
+          mkdir -p Payload
+          cp -r Runner.app Payload/
+          zip -r Runner-debug.ipa Payload
+          mv Runner-debug.ipa $CM_BUILD_DIR/
 
     artifacts:
-      - build/ios/ipa/*.ipa
-      - '**/*.ipa'
+      - '*.ipa'
+      - build/ios/**/*.app
 
     publishing:
       email:
