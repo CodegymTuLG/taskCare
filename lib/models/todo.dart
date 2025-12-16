@@ -11,6 +11,8 @@ class Todo {
   DateTime? dueDate;
   String? category;
   List<ChecklistItem> checklist;
+  String? imagePath; // Path to attached image
+  List<String> tagIds; // List of tag IDs
 
   Todo({
     String? id,
@@ -22,8 +24,11 @@ class Todo {
     this.dueDate,
     this.category,
     List<ChecklistItem>? checklist,
+    this.imagePath,
+    List<String>? tagIds,
   })  : id = id ?? const Uuid().v4(),
-        checklist = checklist ?? [];
+        checklist = checklist ?? [],
+        tagIds = tagIds ?? [];
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -35,6 +40,8 @@ class Todo {
         'dueDate': dueDate?.toIso8601String(),
         'category': category,
         'checklist': checklist.map((item) => item.toJson()).toList(),
+        'imagePath': imagePath,
+        'tagIds': tagIds,
       };
 
   factory Todo.fromJson(Map<String, dynamic> json) => Todo(
@@ -49,5 +56,7 @@ class Todo {
         checklist: (json['checklist'] as List<dynamic>?)
             ?.map((item) => ChecklistItem.fromJson(item as Map<String, dynamic>))
             .toList(),
+        imagePath: json['imagePath'] as String?,
+        tagIds: (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
       );
 }

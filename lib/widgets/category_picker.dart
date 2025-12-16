@@ -23,9 +23,8 @@ class CategoryPicker extends StatelessWidget {
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ...Category.predefined.map((category) => _buildCategoryChip(category)),
             _buildNoneChip(),
@@ -41,7 +40,7 @@ class CategoryPicker extends StatelessWidget {
       onTap: () => onCategorySelected(category.key),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected ? category.color : Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -56,24 +55,10 @@ class CategoryPicker extends StatelessWidget {
                 ]
               : [],
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              category.icon,
-              color: isSelected ? Colors.white : category.color,
-              size: 18,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              category.getLocalizedName(translate),
-              style: TextStyle(
-                color: isSelected ? Colors.white : category.color,
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-              ),
-            ),
-          ],
+        child: Icon(
+          category.icon,
+          color: isSelected ? Colors.white : category.color,
+          size: 22,
         ),
       ),
     );
@@ -85,7 +70,7 @@ class CategoryPicker extends StatelessWidget {
       onTap: () => onCategorySelected(null),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected ? Colors.grey.shade600 : Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -100,13 +85,10 @@ class CategoryPicker extends StatelessWidget {
                 ]
               : [],
         ),
-        child: Text(
-          translate('category_none'),
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey.shade600,
-            fontWeight: FontWeight.bold,
-            fontSize: 13,
-          ),
+        child: Icon(
+          Icons.block,
+          color: isSelected ? Colors.white : Colors.grey.shade600,
+          size: 22,
         ),
       ),
     );

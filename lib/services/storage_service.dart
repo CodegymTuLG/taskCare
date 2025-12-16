@@ -75,8 +75,8 @@ class StorageService {
       // Flush to ensure data is written to disk immediately
       await _box!.flush();
     } catch (e) {
+      // Log error but don't rethrow to avoid debugger pause
       print('Error saving todos: $e');
-      rethrow;
     }
   }
 

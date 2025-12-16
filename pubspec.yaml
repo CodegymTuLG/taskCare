@@ -56,6 +56,10 @@ dependencies:
   # Biometric Authentication (Face ID / Fingerprint)
   local_auth: ^2.2.0
 
+  # Image Picker
+  image_picker: ^1.0.7
+  path: ^1.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
