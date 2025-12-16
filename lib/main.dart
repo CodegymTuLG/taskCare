@@ -91,6 +91,13 @@ class AppLocalizations {
       'biometric_required': 'Xác thực để hoàn thành',
       'biometric_failed': 'Xác thực thất bại',
       'biometric_not_available': 'Thiết bị không hỗ trợ xác thực sinh trắc',
+      'theme_color': 'Màu chủ đạo',
+      'theme_blue': 'Xanh dương',
+      'theme_green': 'Xanh lá',
+      'theme_purple': 'Tím',
+      'theme_orange': 'Cam',
+      'theme_red': 'Đỏ',
+      'theme_teal': 'Xanh ngọc',
     },
     'en': {
       'app_title': 'Task Manager',
@@ -153,6 +160,13 @@ class AppLocalizations {
       'biometric_required': 'Authenticate to complete',
       'biometric_failed': 'Authentication failed',
       'biometric_not_available': 'Biometric not supported',
+      'theme_color': 'Theme Color',
+      'theme_blue': 'Blue',
+      'theme_green': 'Green',
+      'theme_purple': 'Purple',
+      'theme_orange': 'Orange',
+      'theme_red': 'Red',
+      'theme_teal': 'Teal',
     },
     'ja': {
       'app_title': 'タスク管理',
@@ -215,6 +229,13 @@ class AppLocalizations {
       'biometric_required': '完了するには認証が必要',
       'biometric_failed': '認証に失敗しました',
       'biometric_not_available': '生体認証はサポートされていません',
+      'theme_color': 'テーマカラー',
+      'theme_blue': '青',
+      'theme_green': '緑',
+      'theme_purple': '紫',
+      'theme_orange': 'オレンジ',
+      'theme_red': '赤',
+      'theme_teal': 'ティール',
     },
   };
 
@@ -234,10 +255,17 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _languageCode = 'vi';
+  Color _themeColor = Colors.blue;
 
   void changeLanguage(String newLanguageCode) {
     setState(() {
       _languageCode = newLanguageCode;
+    });
+  }
+
+  void changeThemeColor(Color newColor) {
+    setState(() {
+      _themeColor = newColor;
     });
   }
 
@@ -246,13 +274,15 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: AppLocalizations(_languageCode).translate('app_title'),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: _themeColor),
         useMaterial3: true,
       ),
       home: TodoHomePage(
         languageCode: _languageCode,
         onLanguageChange: changeLanguage,
         storageService: widget.storageService,
+        themeColor: _themeColor,
+        onThemeColorChange: changeThemeColor,
       ),
       debugShowCheckedModeBanner: false,
     );
@@ -263,19 +293,23 @@ class TodoHomePage extends StatefulWidget {
   final String languageCode;
   final Function(String) onLanguageChange;
   final StorageService storageService;
+  final Color themeColor;
+  final Function(Color) onThemeColorChange;
 
   const TodoHomePage({
     super.key,
     required this.languageCode,
     required this.onLanguageChange,
     required this.storageService,
+    required this.themeColor,
+    required this.onThemeColorChange,
   });
 
   @override
   State<TodoHomePage> createState() => _TodoHomePageState();
 }
 
-class _TodoHomePageState extends State<TodoHomePage> {
+class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver {
   List<Todo> _todos = [];
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -330,8 +364,20 @@ class _TodoHomePageState extends State<TodoHomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _storage = widget.storageService;
     _loadTodos();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Save immediately when app goes to background or is closed
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _saveTimer?.cancel();
+      _storage.saveTodos(_todos);
+    }
   }
 
   Future<void> _loadTodos() async {
@@ -404,7 +450,10 @@ class _TodoHomePageState extends State<TodoHomePage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _saveTimer?.cancel();
+    // Save one final time before disposing
+    _storage.saveTodos(_todos);
     _titleController.dispose();
     _descriptionController.dispose();
     _quickAddController.dispose();
@@ -842,278 +891,443 @@ class _TodoHomePageState extends State<TodoHomePage> {
     _descriptionController.clear();
     _selectedPriority = 'Thường';
     _selectedCategory = null;
-    _selectedDueDate = null;
+    // Set default due date to tomorrow same time
+    final now = DateTime.now();
+    _selectedDueDate = DateTime(now.year, now.month, now.day + 1, now.hour, now.minute);
     _tempChecklist.clear();
+    bool isDialogListening = false;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  _loc.translate('add_task_title'),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _titleController,
-                  decoration: InputDecoration(
-                    labelText: _loc.translate('title_label'),
-                    hintText: _loc.translate('title_hint'),
-                    prefixIcon: const Icon(Icons.title),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  autofocus: true,
-                ),
-                const SizedBox(height: 15),
-                TextField(
-                  controller: _descriptionController,
-                  decoration: InputDecoration(
-                    labelText: _loc.translate('description_label'),
-                    hintText: _loc.translate('description_hint'),
-                    prefixIcon: const Icon(Icons.description),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  _loc.translate('priority_label'),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildPriorityChip('Thấp', Colors.green, setModalState),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _buildPriorityChip('Thường', Colors.blue, setModalState),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _buildPriorityChip('Cao', Colors.orange, setModalState),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _buildPriorityChip('Khẩn cấp', Colors.red, setModalState),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                CategoryPicker(
-                  selectedCategory: _selectedCategory,
-                  onCategorySelected: (category) {
-                    setModalState(() {
-                      _selectedCategory = category;
-                    });
-                  },
-                  translate: _loc.translate,
-                ),
-                const SizedBox(height: 15),
-                // Due date picker
-                GestureDetector(
-                  onTap: () async {
-                    final date = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDueDate ?? DateTime.now(),
-                      firstDate: DateTime.now(),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
-                    );
-
-                    if (date != null) {
-                      final time = await showTimePicker(
-                        context: context,
-                        initialTime: TimeOfDay.now(),
-                      );
-
-                      if (time != null) {
-                        setModalState(() {
-                          _selectedDueDate = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            time.hour,
-                            time.minute,
+        builder: (context, setModalState) {
+          final themeColor = widget.themeColor;
+          return GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+              ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 50,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        _loc.translate('add_task_title'),
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: themeColor,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Title with voice input
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _titleController,
+                              decoration: InputDecoration(
+                                labelText: _loc.translate('title_label'),
+                                hintText: isDialogListening
+                                    ? _loc.translate('voice_listening')
+                                    : _loc.translate('title_hint'),
+                                prefixIcon: const Icon(Icons.title),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () async {
+                              if (isDialogListening) {
+                                await VoiceInputService.stopListening();
+                                setModalState(() {
+                                  isDialogListening = false;
+                                });
+                              } else {
+                                final isAvailable = await VoiceInputService.isAvailable();
+                                if (!isAvailable) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(_loc.translate('voice_not_available')),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                                setModalState(() {
+                                  isDialogListening = true;
+                                });
+                                await VoiceInputService.startListening(
+                                  onResult: (text) {
+                                    setModalState(() {
+                                      _titleController.text = text;
+                                    });
+                                  },
+                                  localeId: VoiceInputService.getLocaleId(widget.languageCode),
+                                );
+                              }
+                            },
+                            icon: Icon(
+                              isDialogListening ? Icons.mic_off : Icons.mic,
+                              color: isDialogListening ? Colors.red : themeColor,
+                            ),
+                            tooltip: _loc.translate('voice_input'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      // Description with voice input
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _descriptionController,
+                              decoration: InputDecoration(
+                                labelText: _loc.translate('description_label'),
+                                hintText: _loc.translate('description_hint'),
+                                prefixIcon: const Icon(Icons.description),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                              ),
+                              maxLines: 3,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () async {
+                              if (isDialogListening) {
+                                await VoiceInputService.stopListening();
+                                setModalState(() {
+                                  isDialogListening = false;
+                                });
+                              } else {
+                                final isAvailable = await VoiceInputService.isAvailable();
+                                if (!isAvailable) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(_loc.translate('voice_not_available')),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                                setModalState(() {
+                                  isDialogListening = true;
+                                });
+                                await VoiceInputService.startListening(
+                                  onResult: (text) {
+                                    setModalState(() {
+                                      _descriptionController.text = text;
+                                    });
+                                  },
+                                  localeId: VoiceInputService.getLocaleId(widget.languageCode),
+                                );
+                              }
+                            },
+                            icon: Icon(
+                              isDialogListening ? Icons.mic_off : Icons.mic,
+                              color: isDialogListening ? Colors.red : themeColor,
+                            ),
+                            tooltip: _loc.translate('voice_input'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      Text(
+                        _loc.translate('priority_label'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildPriorityChip('Thấp', Colors.green, setModalState),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildPriorityChip('Thường', themeColor, setModalState),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildPriorityChip('Cao', Colors.orange, setModalState),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _buildPriorityChip('Khẩn cấp', Colors.red, setModalState),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      CategoryPicker(
+                        selectedCategory: _selectedCategory,
+                        onCategorySelected: (category) {
+                          setModalState(() {
+                            _selectedCategory = category;
+                          });
+                        },
+                        translate: _loc.translate,
+                      ),
+                      const SizedBox(height: 15),
+                      // Due date picker
+                      GestureDetector(
+                        onTap: () async {
+                          // Dismiss keyboard first
+                          FocusScope.of(context).unfocus();
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDueDate ?? DateTime.now().add(const Duration(days: 1)),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
                           );
-                        });
-                      }
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today, color: Colors.blue.shade600),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _selectedDueDate == null
-                                ? _loc.translate('due_date_set')
-                                : '${_selectedDueDate!.day}/${_selectedDueDate!.month}/${_selectedDueDate!.year} ${_selectedDueDate!.hour.toString().padLeft(2, '0')}:${_selectedDueDate!.minute.toString().padLeft(2, '0')}',
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: _selectedDueDate == null ? Colors.grey.shade600 : Colors.black87,
+
+                          if (date != null) {
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.fromDateTime(_selectedDueDate ?? DateTime.now()),
+                            );
+
+                            if (time != null) {
+                              setModalState(() {
+                                _selectedDueDate = DateTime(
+                                  date.year,
+                                  date.month,
+                                  date.day,
+                                  time.hour,
+                                  time.minute,
+                                );
+                              });
+                            }
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_today, color: themeColor),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _selectedDueDate == null
+                                      ? _loc.translate('due_date_set')
+                                      : '${_selectedDueDate!.day}/${_selectedDueDate!.month}/${_selectedDueDate!.year} ${_selectedDueDate!.hour.toString().padLeft(2, '0')}:${_selectedDueDate!.minute.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: _selectedDueDate == null ? Colors.grey.shade600 : Colors.black87,
+                                  ),
+                                ),
+                              ),
+                              if (_selectedDueDate != null)
+                                IconButton(
+                                  icon: const Icon(Icons.clear, size: 20),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                  onPressed: () {
+                                    setModalState(() {
+                                      _selectedDueDate = null;
+                                    });
+                                  },
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      Row(
+                        children: [
+                          Text(
+                            _loc.translate('checklist_label'),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          TextButton.icon(
+                            onPressed: () {
+                              setModalState(() {
+                                if (_checklistItemController.text.trim().isNotEmpty) {
+                                  _tempChecklist.add(ChecklistItem(title: _checklistItemController.text.trim()));
+                                  _checklistItemController.clear();
+                                }
+                              });
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.add, size: 18),
+                            label: Text(_loc.translate('checklist_add')),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _checklistItemController,
+                        decoration: InputDecoration(
+                          hintText: _loc.translate('checklist_hint'),
+                          prefixIcon: const Icon(Icons.check_box_outline_blank, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onSubmitted: (value) {
+                          if (value.trim().isNotEmpty) {
+                            setModalState(() {
+                              _tempChecklist.add(ChecklistItem(title: value.trim()));
+                              _checklistItemController.clear();
+                            });
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      if (_tempChecklist.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: SingleChildScrollView(
+                            child: NestedChecklist(
+                              items: _tempChecklist,
+                              onToggle: (item) {
+                                setModalState(() {
+                                  item.isCompleted = !item.isCompleted;
+                                });
+                              },
+                              onAddChild: (parent, title) {
+                                setModalState(() {
+                                  parent.children ??= [];
+                                  parent.children!.add(ChecklistItem(title: title));
+                                });
+                              },
+                              onDelete: (item) {
+                                setModalState(() {
+                                  _removeChecklistItem(_tempChecklist, item);
+                                });
+                              },
                             ),
                           ),
                         ),
-                        if (_selectedDueDate != null)
-                          IconButton(
-                            icon: const Icon(Icons.clear, size: 20),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onPressed: () {
-                              setModalState(() {
-                                _selectedDueDate = null;
-                              });
-                            },
-                          ),
                       ],
-                    ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _addTodo,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: themeColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          child: Text(
+                            _loc.translate('add_button'),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 15),
-                Row(
-                  children: [
-                    Text(
-                      _loc.translate('checklist_label'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: () {
-                        setModalState(() {
-                          if (_checklistItemController.text.trim().isNotEmpty) {
-                            _tempChecklist.add(ChecklistItem(title: _checklistItemController.text.trim()));
-                            _checklistItemController.clear();
-                          }
-                        });
-                        setState(() {});
-                      },
-                      icon: const Icon(Icons.add, size: 18),
-                      label: Text(_loc.translate('checklist_add')),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showThemeColorPicker() {
+    final colors = [
+      {'color': Colors.blue, 'key': 'theme_blue'},
+      {'color': Colors.green, 'key': 'theme_green'},
+      {'color': Colors.purple, 'key': 'theme_purple'},
+      {'color': Colors.orange, 'key': 'theme_orange'},
+      {'color': Colors.red, 'key': 'theme_red'},
+      {'color': Colors.teal, 'key': 'theme_teal'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(_loc.translate('theme_color')),
+        content: Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: colors.map((item) {
+            final color = item['color'] as Color;
+            final isSelected = widget.themeColor == color;
+            return GestureDetector(
+              onTap: () {
+                widget.onThemeColorChange(color);
+                Navigator.pop(context);
+              },
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: isSelected
+                      ? Border.all(color: Colors.white, width: 3)
+                      : null,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _checklistItemController,
-                  decoration: InputDecoration(
-                    hintText: _loc.translate('checklist_hint'),
-                    prefixIcon: const Icon(Icons.check_box_outline_blank, size: 20),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  onSubmitted: (value) {
-                    if (value.trim().isNotEmpty) {
-                      setModalState(() {
-                        _tempChecklist.add(ChecklistItem(title: value.trim()));
-                        _checklistItemController.clear();
-                      });
-                      setState(() {});
-                    }
-                  },
-                ),
-                if (_tempChecklist.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Container(
-                    constraints: const BoxConstraints(maxHeight: 200),
-                    child: SingleChildScrollView(
-                      child: NestedChecklist(
-                        items: _tempChecklist,
-                        onToggle: (item) {
-                          setModalState(() {
-                            item.isCompleted = !item.isCompleted;
-                          });
-                        },
-                        onAddChild: (parent, title) {
-                          setModalState(() {
-                            parent.children ??= [];
-                            parent.children!.add(ChecklistItem(title: title));
-                          });
-                        },
-                        onDelete: (item) {
-                          setModalState(() {
-                            _removeChecklistItem(_tempChecklist, item);
-                          });
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _addTodo,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    child: Text(
-                      _loc.translate('add_button'),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
-            ),
-          ),
+                child: isSelected
+                    ? const Icon(Icons.check, color: Colors.white)
+                    : null,
+              ),
+            );
+          }).toList(),
         ),
       ),
     );
@@ -1263,6 +1477,8 @@ class _TodoHomePageState extends State<TodoHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeColor = widget.themeColor;
+
     if (_isLoading) {
       return Scaffold(
         body: Center(
@@ -1270,7 +1486,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade600),
+                valueColor: AlwaysStoppedAnimation<Color>(themeColor),
               ),
               const SizedBox(height: 20),
               Text(
@@ -1302,7 +1518,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.blue.shade600, Colors.blue.shade400],
+              colors: [themeColor, themeColor.withValues(alpha: 0.7)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -1346,6 +1562,12 @@ class _TodoHomePageState extends State<TodoHomePage> {
           ),
         ),
         actions: [
+          // Theme color picker button
+          IconButton(
+            icon: const Icon(Icons.palette, color: Colors.white),
+            onPressed: _showThemeColorPicker,
+            tooltip: _loc.translate('theme_color'),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort, color: Colors.white),
             onSelected: (value) {
@@ -1358,7 +1580,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
                 value: 'Mới nhất',
                 child: Row(
                   children: [
-                    Icon(Icons.access_time, size: 20, color: _sortBy == 'Mới nhất' ? Colors.blue : Colors.grey),
+                    Icon(Icons.access_time, size: 20, color: _sortBy == 'Mới nhất' ? themeColor : Colors.grey),
                     const SizedBox(width: 10),
                     Text(_getLocalizedSort('Mới nhất'), style: TextStyle(fontWeight: _sortBy == 'Mới nhất' ? FontWeight.bold : FontWeight.normal)),
                   ],
@@ -1368,7 +1590,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
                 value: 'Cũ nhất',
                 child: Row(
                   children: [
-                    Icon(Icons.history, size: 20, color: _sortBy == 'Cũ nhất' ? Colors.blue : Colors.grey),
+                    Icon(Icons.history, size: 20, color: _sortBy == 'Cũ nhất' ? themeColor : Colors.grey),
                     const SizedBox(width: 10),
                     Text(_getLocalizedSort('Cũ nhất'), style: TextStyle(fontWeight: _sortBy == 'Cũ nhất' ? FontWeight.bold : FontWeight.normal)),
                   ],
@@ -1378,7 +1600,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
                 value: 'Ưu tiên',
                 child: Row(
                   children: [
-                    Icon(Icons.priority_high, size: 20, color: _sortBy == 'Ưu tiên' ? Colors.blue : Colors.grey),
+                    Icon(Icons.priority_high, size: 20, color: _sortBy == 'Ưu tiên' ? themeColor : Colors.grey),
                     const SizedBox(width: 10),
                     Text(_getLocalizedSort('Ưu tiên'), style: TextStyle(fontWeight: _sortBy == 'Ưu tiên' ? FontWeight.bold : FontWeight.normal)),
                   ],
@@ -1394,7 +1616,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.blue.shade600, Colors.blue.shade400],
+                colors: [themeColor, themeColor.withValues(alpha: 0.7)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -1466,7 +1688,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
                           padding: const EdgeInsets.all(8),
-                          child: Icon(Icons.add_circle, color: Colors.blue.shade600, size: 28),
+                          child: Icon(Icons.add_circle, color: themeColor, size: 28),
                         ),
                       ),
                       InkWell(
@@ -1890,7 +2112,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
                                 IconButton(
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(),
-                                  icon: const Icon(Icons.share, color: Colors.blue, size: 20),
+                                  icon: Icon(Icons.share, color: themeColor, size: 20),
                                   onPressed: () => _shareTodo(todo),
                                   tooltip: _loc.translate('share'),
                                 ),
@@ -1916,13 +2138,13 @@ class _TodoHomePageState extends State<TodoHomePage> {
       floatingActionButton: _quickAddController.text.isEmpty
           ? FloatingActionButton(
               onPressed: _showAddTodoDialog,
-              backgroundColor: Colors.blue.shade600,
+              backgroundColor: themeColor,
               elevation: 8,
               child: Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
-                    colors: [Colors.blue.shade600, Colors.blue.shade400],
+                    colors: [themeColor, themeColor.withValues(alpha: 0.7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -1938,6 +2160,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
 
   Widget _buildFilterIconButton(String label, IconData icon, {Color? color}) {
     final isSelected = _filterStatus == label;
+    final themeColor = widget.themeColor;
 
     return GestureDetector(
       onTap: () {
@@ -1964,7 +2187,7 @@ class _TodoHomePageState extends State<TodoHomePage> {
         child: Icon(
           icon,
           size: 18,
-          color: isSelected ? (color ?? Colors.blue.shade600) : Colors.white,
+          color: isSelected ? (color ?? themeColor) : Colors.white,
         ),
       ),
     );
