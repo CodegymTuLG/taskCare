@@ -944,26 +944,19 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                         ),
                       ),
                       const SizedBox(height: 20),
-                      // Title with voice input
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _titleController,
-                              decoration: InputDecoration(
-                                labelText: _loc.translate('title_label'),
-                                hintText: isDialogListening
-                                    ? _loc.translate('voice_listening')
-                                    : _loc.translate('title_hint'),
-                                prefixIcon: const Icon(Icons.title),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                            ),
+                      // Title field
+                      TextField(
+                        controller: _titleController,
+                        decoration: InputDecoration(
+                          labelText: _loc.translate('title_label'),
+                          hintText: isDialogListening
+                              ? _loc.translate('voice_listening')
+                              : _loc.translate('title_hint'),
+                          prefixIcon: const Icon(Icons.title),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
                           ),
-                          const SizedBox(width: 8),
-                          IconButton(
+                          suffixIcon: IconButton(
                             onPressed: () async {
                               if (isDialogListening) {
                                 await VoiceInputService.stopListening();
@@ -1002,68 +995,21 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                             ),
                             tooltip: _loc.translate('voice_input'),
                           ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 15),
-                      // Description with voice input
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _descriptionController,
-                              decoration: InputDecoration(
-                                labelText: _loc.translate('description_label'),
-                                hintText: _loc.translate('description_hint'),
-                                prefixIcon: const Icon(Icons.description),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(15),
-                                ),
-                              ),
-                              maxLines: 3,
-                            ),
+                      // Description field
+                      TextField(
+                        controller: _descriptionController,
+                        decoration: InputDecoration(
+                          labelText: _loc.translate('description_label'),
+                          hintText: _loc.translate('description_hint'),
+                          prefixIcon: const Icon(Icons.description),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15),
                           ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () async {
-                              if (isDialogListening) {
-                                await VoiceInputService.stopListening();
-                                setModalState(() {
-                                  isDialogListening = false;
-                                });
-                              } else {
-                                final isAvailable = await VoiceInputService.isAvailable();
-                                if (!isAvailable) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(_loc.translate('voice_not_available')),
-                                        backgroundColor: Colors.orange,
-                                      ),
-                                    );
-                                  }
-                                  return;
-                                }
-                                setModalState(() {
-                                  isDialogListening = true;
-                                });
-                                await VoiceInputService.startListening(
-                                  onResult: (text) {
-                                    setModalState(() {
-                                      _descriptionController.text = text;
-                                    });
-                                  },
-                                  localeId: VoiceInputService.getLocaleId(widget.languageCode),
-                                );
-                              }
-                            },
-                            icon: Icon(
-                              isDialogListening ? Icons.mic_off : Icons.mic,
-                              color: isDialogListening ? Colors.red : themeColor,
-                            ),
-                            tooltip: _loc.translate('voice_input'),
-                          ),
-                        ],
+                        ),
+                        maxLines: 3,
                       ),
                       const SizedBox(height: 15),
                       Text(
@@ -1282,52 +1228,68 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
 
   void _showThemeColorPicker() {
     final colors = [
-      {'color': Colors.blue, 'key': 'theme_blue'},
-      {'color': Colors.green, 'key': 'theme_green'},
-      {'color': Colors.purple, 'key': 'theme_purple'},
-      {'color': Colors.orange, 'key': 'theme_orange'},
-      {'color': Colors.red, 'key': 'theme_red'},
-      {'color': Colors.teal, 'key': 'theme_teal'},
+      // Blues
+      Colors.blue,
+      Colors.lightBlue,
+      Colors.indigo,
+      Colors.cyan,
+      // Greens
+      Colors.green,
+      Colors.lightGreen,
+      Colors.teal,
+      Colors.lime,
+      // Warm colors
+      Colors.red,
+      Colors.pink,
+      Colors.orange,
+      Colors.amber,
+      // Purples & others
+      Colors.purple,
+      Colors.deepPurple,
+      Colors.brown,
+      Colors.blueGrey,
     ];
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(_loc.translate('theme_color')),
-        content: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: colors.map((item) {
-            final color = item['color'] as Color;
-            final isSelected = widget.themeColor == color;
-            return GestureDetector(
-              onTap: () {
-                widget.onThemeColorChange(color);
-                Navigator.pop(context);
-              },
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: isSelected
-                      ? Border.all(color: Colors.white, width: 3)
+        content: SizedBox(
+          width: 280,
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: colors.map((color) {
+              final isSelected = widget.themeColor == color;
+              return GestureDetector(
+                onTap: () {
+                  widget.onThemeColorChange(color);
+                  Navigator.pop(context);
+                },
+                child: Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: isSelected
+                        ? Border.all(color: Colors.white, width: 3)
+                        : null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 20)
                       : null,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
-                child: isSelected
-                    ? const Icon(Icons.check, color: Colors.white)
-                    : null,
-              ),
-            );
-          }).toList(),
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
