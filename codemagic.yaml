@@ -1,12 +1,12 @@
 workflows:
-  ios-debug:
-    name: iOS Debug Build (For Sideload)
+  ios-device:
+    name: iOS Build for Real Device
     max_build_duration: 60
     instance_type: mac_mini_m1
 
     environment:
       flutter: stable
-      xcode: latest
+      xcode: 15.4
       cocoapods: default
 
     scripts:
@@ -18,11 +18,18 @@ workflows:
         script: |
           cd ios
           pod repo update
-          pod install
+          pod install --repo-update
 
-      - name: Build iOS Release for Device
+      - name: Build iOS for Device
         script: |
-          flutter build ios --release --no-codesign
+          # Build for real device (arm64), NOT simulator
+          flutter build ios --release --no-codesign --no-tree-shake-icons
+
+          # Verify the build is for device
+          echo "Checking architecture..."
+          file build/ios/iphoneos/Runner.app/Runner
+
+          # Create IPA
           cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
@@ -31,7 +38,7 @@ workflows:
 
     artifacts:
       - '*.ipa'
-      - build/ios/**/*.app
+      - build/ios/iphoneos/*.app
 
     publishing:
       email:
