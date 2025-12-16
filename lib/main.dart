@@ -934,16 +934,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        _loc.translate('add_task_title'),
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: themeColor,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 15),
                       // Title field
                       TextField(
                         controller: _titleController,
@@ -956,48 +947,9 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
-                          suffixIcon: IconButton(
-                            onPressed: () async {
-                              if (isDialogListening) {
-                                await VoiceInputService.stopListening();
-                                setModalState(() {
-                                  isDialogListening = false;
-                                });
-                              } else {
-                                final isAvailable = await VoiceInputService.isAvailable();
-                                if (!isAvailable) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(_loc.translate('voice_not_available')),
-                                        backgroundColor: Colors.orange,
-                                      ),
-                                    );
-                                  }
-                                  return;
-                                }
-                                setModalState(() {
-                                  isDialogListening = true;
-                                });
-                                await VoiceInputService.startListening(
-                                  onResult: (text) {
-                                    setModalState(() {
-                                      _titleController.text = text;
-                                    });
-                                  },
-                                  localeId: VoiceInputService.getLocaleId(widget.languageCode),
-                                );
-                              }
-                            },
-                            icon: Icon(
-                              isDialogListening ? Icons.mic_off : Icons.mic,
-                              color: isDialogListening ? Colors.red : themeColor,
-                            ),
-                            tooltip: _loc.translate('voice_input'),
-                          ),
                         ),
                       ),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 10),
                       // Description field
                       TextField(
                         controller: _descriptionController,
@@ -1009,7 +961,82 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                             borderRadius: BorderRadius.circular(15),
                           ),
                         ),
-                        maxLines: 3,
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 8),
+                      // Voice input button - shared for both fields
+                      Center(
+                        child: InkWell(
+                          onTap: () async {
+                            if (isDialogListening) {
+                              await VoiceInputService.stopListening();
+                              setModalState(() {
+                                isDialogListening = false;
+                              });
+                            } else {
+                              final isAvailable = await VoiceInputService.isAvailable();
+                              if (!isAvailable) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(_loc.translate('voice_not_available')),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                }
+                                return;
+                              }
+                              setModalState(() {
+                                isDialogListening = true;
+                              });
+                              // Fill title first, then description
+                              await VoiceInputService.startListening(
+                                onResult: (text) {
+                                  setModalState(() {
+                                    if (_titleController.text.isEmpty) {
+                                      _titleController.text = text;
+                                    } else {
+                                      _descriptionController.text = text;
+                                    }
+                                  });
+                                },
+                                localeId: VoiceInputService.getLocaleId(widget.languageCode),
+                              );
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(25),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isDialogListening ? Colors.red.shade50 : themeColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(25),
+                              border: Border.all(
+                                color: isDialogListening ? Colors.red : themeColor,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isDialogListening ? Icons.mic_off : Icons.mic,
+                                  color: isDialogListening ? Colors.red : themeColor,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isDialogListening
+                                      ? _loc.translate('voice_listening')
+                                      : _loc.translate('voice_input'),
+                                  style: TextStyle(
+                                    color: isDialogListening ? Colors.red : themeColor,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 15),
                       Text(
