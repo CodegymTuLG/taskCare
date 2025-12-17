@@ -220,7 +220,7 @@ class _PomodoroTimerState extends State<PomodoroTimer> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${widget.translate('pomodoro')}: $_completedSessions',
+                    '${widget.translate('pomodoro_sessions')}: $_completedSessions',
                     style: TextStyle(
                       fontSize: 14,
                       color: widget.isDarkMode

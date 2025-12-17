@@ -120,6 +120,7 @@ class AppLocalizations {
       'pomodoro_pause': 'Tạm dừng',
       'pomodoro_reset': 'Đặt lại',
       'pomodoro_complete': 'Hoàn thành phiên làm việc!',
+      'pomodoro_sessions': 'Phiên',
       'calendar': 'Lịch',
       'today': 'Hôm nay',
       'backup': 'Sao lưu',
@@ -212,6 +213,7 @@ class AppLocalizations {
       'pomodoro_pause': 'Pause',
       'pomodoro_reset': 'Reset',
       'pomodoro_complete': 'Work session complete!',
+      'pomodoro_sessions': 'Sessions',
       'calendar': 'Calendar',
       'today': 'Today',
       'backup': 'Backup',
@@ -304,6 +306,7 @@ class AppLocalizations {
       'pomodoro_pause': '一時停止',
       'pomodoro_reset': 'リセット',
       'pomodoro_complete': '作業セッション完了！',
+      'pomodoro_sessions': 'セッション',
       'calendar': 'カレンダー',
       'today': '今日',
       'backup': 'バックアップ',
@@ -513,11 +516,11 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     }
   }
 
-  void _scheduleSave() {
+  void _scheduleSave({bool immediate = false}) {
     _saveTimer?.cancel();
-    _saveTimer = Timer(const Duration(milliseconds: 300), () {
+    if (immediate) { _storage.saveTodos(_todos); } else { _saveTimer = Timer(const Duration(milliseconds: 300), () {
       _storage.saveTodos(_todos);
-    });
+    }); }
   }
 
   Future<void> _startVoiceInput(TextEditingController controller) async {
@@ -582,7 +585,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
       );
     });
 
-    _scheduleSave();
+    _scheduleSave(immediate: true);
     _quickAddController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -622,7 +625,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
       _todos.insert(0, newTodo);
     });
 
-    _scheduleSave();
+    _scheduleSave(immediate: true);
 
     // Schedule notification if due date is set
     if (newTodo.dueDate != null) {
@@ -671,7 +674,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     setState(() {
       _todos[index].isCompleted = !_todos[index].isCompleted;
     });
-    _scheduleSave();
+    _scheduleSave(immediate: true);
 
     // Cancel notification if completed, reschedule if uncompleted
     if (_todos[index].isCompleted) {
@@ -688,7 +691,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     setState(() {
       _todos.removeAt(index);
     });
-    _scheduleSave();
+    _scheduleSave(immediate: true);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -701,7 +704,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
             setState(() {
               _todos.insert(index, todo);
             });
-            _scheduleSave();
+            _scheduleSave(immediate: true);
           },
         ),
       ),
@@ -815,7 +818,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                                 todo.priority = _getNextPriority(todo.priority);
                               });
                               setState(() {});
-                              _scheduleSave();
+                              _scheduleSave(immediate: true);
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -2791,7 +2794,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                                                     setState(() {
                                                       item.isCompleted = !item.isCompleted;
                                                     });
-                                                    _scheduleSave();
+                                                    _scheduleSave(immediate: true);
                                                   },
                                                   child: AnimatedContainer(
                                                     duration: const Duration(milliseconds: 150),
