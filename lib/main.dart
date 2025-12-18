@@ -429,7 +429,6 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
   String _filterStatus = 'Chưa hoàn thành';
   String _sortBy = 'Mới nhất';
   bool _isLoading = true;
-  Timer? _saveTimer;
   late StorageService _storage;
   String _searchQuery = '';
   bool _isListening = false;
@@ -473,7 +472,6 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive ||
         state == AppLifecycleState.detached) {
-      _saveTimer?.cancel();
       _storage.saveTodos(_todos);
       _storage.saveTags(_tags);
     }
@@ -507,11 +505,8 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     }
   }
 
-  void _scheduleSave({bool immediate = false}) {
-    _saveTimer?.cancel();
-    if (immediate) { _storage.saveTodos(_todos); } else { _saveTimer = Timer(const Duration(milliseconds: 300), () {
-      _storage.saveTodos(_todos);
-    }); }
+  void _saveTodos() {
+    _storage.saveTodos(_todos);
   }
 
   Future<void> _startVoiceInput(TextEditingController controller) async {
@@ -552,7 +547,6 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _saveTimer?.cancel();
     // Save one final time before disposing
     _storage.saveTodos(_todos);
     _titleController.dispose();
@@ -576,7 +570,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
       );
     });
 
-    _scheduleSave(immediate: true);
+    _saveTodos();
     _quickAddController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -616,7 +610,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
       _todos.insert(0, newTodo);
     });
 
-    _scheduleSave(immediate: true);
+    _saveTodos();
 
     // Schedule notification if due date is set
     if (newTodo.dueDate != null) {
@@ -665,7 +659,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     setState(() {
       _todos[index].isCompleted = !_todos[index].isCompleted;
     });
-    _scheduleSave(immediate: true);
+    _saveTodos();
 
     // Cancel notification if completed, reschedule if uncompleted
     if (_todos[index].isCompleted) {
@@ -682,7 +676,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     setState(() {
       _todos.removeAt(index);
     });
-    _scheduleSave(immediate: true);
+    _saveTodos();
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -695,7 +689,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
             setState(() {
               _todos.insert(index, todo);
             });
-            _scheduleSave(immediate: true);
+            _saveTodos();
           },
         ),
       ),
@@ -809,7 +803,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                                 todo.priority = _getNextPriority(todo.priority);
                               });
                               setState(() {});
-                              _scheduleSave(immediate: true);
+                              _saveTodos();
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -2787,7 +2781,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                                                     setState(() {
                                                       item.isCompleted = !item.isCompleted;
                                                     });
-                                                    _scheduleSave(immediate: true);
+                                                    _saveTodos();
                                                   },
                                                   child: AnimatedContainer(
                                                     duration: const Duration(milliseconds: 150),
