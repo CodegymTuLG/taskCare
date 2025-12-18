@@ -39,7 +39,7 @@ class AppLocalizations {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'vi': {
-      'app_title': 'Quản Lý Công Việc',
+      'app_title': 'TaskCare',
       'quick_add_hint': 'Thêm công việc nhanh...',
       'add_task_title': 'Thêm công việc mới',
       'title_label': 'Tiêu đề',
@@ -137,7 +137,7 @@ class AppLocalizations {
       'font_size': 'Cỡ chữ',
     },
     'en': {
-      'app_title': 'Task Manager',
+      'app_title': 'TaskCare',
       'quick_add_hint': 'Quick add task...',
       'add_task_title': 'Add New Task',
       'title_label': 'Title',
