@@ -130,6 +130,10 @@ class AppLocalizations {
       'backup_success': 'Sao lưu thành công!',
       'restore_success': 'Khôi phục thành công!',
       'no_tasks_today': 'Không có công việc hôm nay',
+      'exit_app': 'Thoát ứng dụng',
+      'exit_confirm': 'Bạn có muốn lưu và thoát ứng dụng?',
+      'exit_save_exit': 'Lưu & Thoát',
+      'cancel': 'Hủy',
     },
     'en': {
       'app_title': 'Task Manager',
@@ -223,6 +227,10 @@ class AppLocalizations {
       'backup_success': 'Backup successful!',
       'restore_success': 'Restore successful!',
       'no_tasks_today': 'No tasks for today',
+      'exit_app': 'Exit App',
+      'exit_confirm': 'Do you want to save and exit?',
+      'exit_save_exit': 'Save & Exit',
+      'cancel': 'Cancel',
     },
     'ja': {
       'app_title': 'タスク管理',
@@ -316,6 +324,10 @@ class AppLocalizations {
       'backup_success': 'バックアップ成功！',
       'restore_success': '復元成功！',
       'no_tasks_today': '今日のタスクはありません',
+      'exit_app': 'アプリを終了',
+      'exit_confirm': '保存して終了しますか？',
+      'exit_save_exit': '保存して終了',
+      'cancel': 'キャンセル',
     },
   };
 
@@ -2162,6 +2174,9 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                 case 'tags':
                   _showTagsDialog();
                   break;
+                case 'exit':
+                  _showExitDialog();
+                  break;
               }
             },
             itemBuilder: (context) => [
@@ -2182,6 +2197,17 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                     Icon(Icons.backup_outlined, color: themeColor),
                     const SizedBox(width: 10),
                     Text(_loc.translate('backup')),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'exit',
+                child: Row(
+                  children: [
+                    Icon(Icons.exit_to_app, color: Colors.red),
+                    const SizedBox(width: 10),
+                    Text(_loc.translate('exit_app'), style: const TextStyle(color: Colors.red)),
                   ],
                 ),
               ),
@@ -3016,6 +3042,50 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     ).then((_) {
       setState(() => _currentViewIndex = 0);
     });
+  }
+
+  void _showExitDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: widget.isDarkMode ? Colors.grey.shade900 : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.exit_to_app, color: Colors.red),
+            const SizedBox(width: 10),
+            Text(
+              _loc.translate('exit_app'),
+              style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87),
+            ),
+          ],
+        ),
+        content: Text(
+          _loc.translate('exit_confirm'),
+          style: TextStyle(color: widget.isDarkMode ? Colors.white70 : Colors.black54),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(_loc.translate('cancel')),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              // Save all data
+              await _storage.saveTodos(_todos);
+              await _storage.saveTags(_tags);
+              // Close the app
+              exit(0);
+            },
+            child: Text(_loc.translate('exit_save_exit')),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showPomodoroTimer() {
