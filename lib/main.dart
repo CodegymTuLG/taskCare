@@ -134,6 +134,7 @@ class AppLocalizations {
       'exit_confirm': 'Bạn có muốn lưu và thoát ứng dụng?',
       'exit_save_exit': 'Lưu & Thoát',
       'cancel': 'Hủy',
+      'font_size': 'Cỡ chữ',
     },
     'en': {
       'app_title': 'Task Manager',
@@ -231,6 +232,7 @@ class AppLocalizations {
       'exit_confirm': 'Do you want to save and exit?',
       'exit_save_exit': 'Save & Exit',
       'cancel': 'Cancel',
+      'font_size': 'Font size',
     },
     'ja': {
       'app_title': 'タスク管理',
@@ -328,6 +330,7 @@ class AppLocalizations {
       'exit_confirm': '保存して終了しますか？',
       'exit_save_exit': '保存して終了',
       'cancel': 'キャンセル',
+      'font_size': 'フォントサイズ',
     },
   };
 
@@ -349,6 +352,22 @@ class _MyAppState extends State<MyApp> {
   String _languageCode = 'vi';
   Color _themeColor = Colors.blue;
   bool _isDarkMode = false;
+  double _fontScale = 1.0; // 5 levels: 0.8, 0.9, 1.0, 1.1, 1.2
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFontScale();
+  }
+
+  void _loadFontScale() {
+    final scale = widget.storageService.loadFontScale();
+    if (scale != _fontScale) {
+      setState(() {
+        _fontScale = scale;
+      });
+    }
+  }
 
   void changeLanguage(String newLanguageCode) {
     setState(() {
@@ -368,10 +387,29 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  void changeFontScale() {
+    setState(() {
+      // Cycle through 5 levels: 0.8 -> 0.9 -> 1.0 -> 1.1 -> 1.2 -> 0.8
+      final scales = [0.8, 0.9, 1.0, 1.1, 1.2];
+      final currentIndex = scales.indexOf(_fontScale);
+      final nextIndex = (currentIndex + 1) % scales.length;
+      _fontScale = scales[nextIndex];
+    });
+    widget.storageService.saveFontScale(_fontScale);
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: AppLocalizations(_languageCode).translate('app_title'),
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(_fontScale),
+          ),
+          child: child!,
+        );
+      },
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: _themeColor,
@@ -397,6 +435,8 @@ class _MyAppState extends State<MyApp> {
         onThemeColorChange: changeThemeColor,
         isDarkMode: _isDarkMode,
         onDarkModeChange: toggleDarkMode,
+        fontScale: _fontScale,
+        onFontScaleChange: changeFontScale,
       ),
       debugShowCheckedModeBanner: false,
     );
@@ -411,6 +451,8 @@ class TodoHomePage extends StatefulWidget {
   final Function(Color) onThemeColorChange;
   final bool isDarkMode;
   final Function(bool) onDarkModeChange;
+  final double fontScale;
+  final VoidCallback onFontScaleChange;
 
   const TodoHomePage({
     super.key,
@@ -421,6 +463,8 @@ class TodoHomePage extends StatefulWidget {
     required this.onThemeColorChange,
     required this.isDarkMode,
     required this.onDarkModeChange,
+    required this.fontScale,
+    required this.onFontScaleChange,
   });
 
   @override
@@ -2148,6 +2192,62 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
           ),
         ),
         actions: [
+          // Font size toggle button
+          GestureDetector(
+            onTap: widget.onFontScaleChange,
+            child: Container(
+              width: 44,
+              height: 44,
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Small T (top-left)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Text(
+                      'T',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: widget.fontScale <= 0.9 ? Colors.white : Colors.white70,
+                      ),
+                    ),
+                  ),
+                  // Large T (bottom-right)
+                  Positioned(
+                    bottom: 6,
+                    right: 8,
+                    child: Text(
+                      'T',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: widget.fontScale >= 1.1 ? Colors.white : Colors.white70,
+                      ),
+                    ),
+                  ),
+                  // Current scale indicator
+                  Positioned(
+                    bottom: 2,
+                    child: Text(
+                      '${(widget.fontScale * 100).toInt()}%',
+                      style: const TextStyle(
+                        fontSize: 8,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           // Dark mode toggle
           IconButton(
             icon: Icon(

@@ -8,6 +8,7 @@ class StorageService {
   static const String _todosBoxName = 'todos';
   static const String _todosKey = 'todos_list';
   static const String _tagsKey = 'tags_list';
+  static const String _fontScaleKey = 'font_scale';
   static const String _versionKey = 'schema_version';
   static const int _currentVersion = 2;
 
@@ -113,6 +114,25 @@ class StorageService {
     } catch (e) {
       debugPrint('Error loading tags: \$e');
       return [];
+    }
+  }
+
+  // Font scale persistence
+  Future<void> saveFontScale(double scale) async {
+    try {
+      await _box!.put(_fontScaleKey, scale);
+      await _box!.flush();
+    } catch (e) {
+      debugPrint('Error saving font scale: $e');
+    }
+  }
+
+  double loadFontScale() {
+    try {
+      return _box!.get(_fontScaleKey, defaultValue: 1.0) as double;
+    } catch (e) {
+      debugPrint('Error loading font scale: $e');
+      return 1.0;
     }
   }
 
