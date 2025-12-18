@@ -490,6 +490,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
   bool _isListening = false;
   String? _selectedImagePath;
   int _currentViewIndex = 0; // 0: Tasks, 1: Calendar, 2: Pomodoro
+  List<String> _selectedTagIds = [];
 
   AppLocalizations get _loc => AppLocalizations(widget.languageCode);
 
@@ -660,6 +661,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
       createdAt: DateTime.now(),
       checklist: List.from(_tempChecklist),
       imagePath: _selectedImagePath,
+      tagIds: List.from(_selectedTagIds),
     );
 
     setState(() {
@@ -680,6 +682,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
     _selectedDueDate = null;
     _selectedImagePath = null;
     _tempChecklist.clear();
+    _selectedTagIds.clear();
     Navigator.pop(context);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1370,6 +1373,61 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                             ),
                           ),
                           const SizedBox(height: 16),
+                          // Tags Section
+                          if (_tags.isNotEmpty)
+                            _buildSectionCard(
+                              icon: Icons.label_outline,
+                              themeColor: themeColor,
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _tags.map((tag) {
+                                  final isSelected = _selectedTagIds.contains(tag.id);
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setModalState(() {
+                                        if (isSelected) {
+                                          _selectedTagIds.remove(tag.id);
+                                        } else {
+                                          _selectedTagIds.add(tag.id);
+                                        }
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: isSelected ? tag.color : tag.color.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: tag.color,
+                                          width: isSelected ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (isSelected)
+                                            const Padding(
+                                              padding: EdgeInsets.only(right: 4),
+                                              child: Icon(Icons.check, size: 14, color: Colors.white),
+                                            ),
+                                          Text(
+                                            tag.name,
+                                            style: TextStyle(
+                                              color: isSelected ? Colors.white : tag.color,
+                                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          if (_tags.isNotEmpty)
+                            const SizedBox(height: 16),
                           // Due Date & Image Row
                           Row(
                             children: [
