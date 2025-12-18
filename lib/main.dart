@@ -434,21 +434,9 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
   String _searchQuery = '';
   bool _isListening = false;
   String? _selectedImagePath;
-  List<String> _selectedTagIds = [];
   int _currentViewIndex = 0; // 0: Tasks, 1: Calendar, 2: Pomodoro
 
   AppLocalizations get _loc => AppLocalizations(widget.languageCode);
-
-  String _getPriorityKey(String displayValue) {
-    final viPriorities = ['Thấp', 'Thường', 'Cao', 'Khẩn cấp'];
-    final enPriorities = ['Low', 'Normal', 'High', 'Urgent'];
-    final jaPriorities = ['低', '通常', '高', '緊急'];
-
-    if (viPriorities.contains(displayValue)) return displayValue;
-    if (enPriorities.contains(displayValue)) return viPriorities[enPriorities.indexOf(displayValue)];
-    if (jaPriorities.contains(displayValue)) return viPriorities[jaPriorities.indexOf(displayValue)];
-    return 'Thường';
-  }
 
   String _getLocalizedPriority(String viPriority) {
     final priorities = {'Thấp': 'priority_low', 'Thường': 'priority_normal', 'Cao': 'priority_high', 'Khẩn cấp': 'priority_urgent'};
@@ -487,6 +475,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
         state == AppLifecycleState.detached) {
       _saveTimer?.cancel();
       _storage.saveTodos(_todos);
+      _storage.saveTags(_tags);
     }
   }
 
@@ -497,8 +486,10 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
 
     try {
       final todos = _storage.loadTodos();
+      final tags = _storage.loadTags();
       setState(() {
         _todos = todos;
+        _tags = tags;
         _isLoading = false;
       });
     } catch (e) {
@@ -1830,6 +1821,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                               color: selectedColor,
                             ));
                           });
+                          _storage.saveTags(_tags);
                           setDialogState(() {});
                           tagController.clear();
                         }
@@ -1888,6 +1880,7 @@ class _TodoHomePageState extends State<TodoHomePage> with WidgetsBindingObserver
                                   setState(() {
                                     _tags.removeAt(index);
                                   });
+                                  _storage.saveTags(_tags);
                                   setDialogState(() {});
                                 },
                                 icon: Icon(Icons.close, color: Colors.red.shade400, size: 20),

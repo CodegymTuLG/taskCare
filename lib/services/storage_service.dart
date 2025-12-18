@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/todo.dart';
+import '../models/tag.dart';
 
 class StorageService {
   static const String _todosBoxName = 'todos';
   static const String _todosKey = 'todos_list';
+  static const String _tagsKey = 'tags_list';
   static const String _versionKey = 'schema_version';
   static const int _currentVersion = 2;
 
@@ -72,11 +75,9 @@ class StorageService {
     try {
       final jsonList = todos.map((todo) => todo.toJson()).toList();
       await _box!.put(_todosKey, jsonList);
-      // Flush to ensure data is written to disk immediately
       await _box!.flush();
     } catch (e) {
-      // Log error but don't rethrow to avoid debugger pause
-      print('Error saving todos: $e');
+      debugPrint('Error saving todos: \$e');
     }
   }
 
@@ -87,7 +88,30 @@ class StorageService {
           .map((json) => Todo.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('Error loading todos: $e');
+      debugPrint('Error loading todos: \$e');
+      return [];
+    }
+  }
+
+  // Tags persistence
+  Future<void> saveTags(List<Tag> tags) async {
+    try {
+      final jsonList = tags.map((tag) => tag.toJson()).toList();
+      await _box!.put(_tagsKey, jsonList);
+      await _box!.flush();
+    } catch (e) {
+      debugPrint('Error saving tags: \$e');
+    }
+  }
+
+  List<Tag> loadTags() {
+    try {
+      final jsonList = _box!.get(_tagsKey, defaultValue: []) as List;
+      return jsonList
+          .map((json) => Tag.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('Error loading tags: \$e');
       return [];
     }
   }
