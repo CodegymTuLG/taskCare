@@ -1,127 +1,105 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:uuid/uuid.dart';
+import 'package:path_provider/path_provider.dart';
 import '../models/todo.dart';
 import '../models/tag.dart';
 
 class StorageService {
-  static const String _todosBoxName = 'todos';
-  static const String _todosKey = 'todos_list';
-  static const String _tagsKey = 'tags_list';
-  static const String _fontScaleKey = 'font_scale';
-  static const String _versionKey = 'schema_version';
-  static const int _currentVersion = 2;
+  static const String _dataFileName = 'taskcare_data.json';
 
-  Box? _box;
+  File? _dataFile;
+  Map<String, dynamic> _data = {};
 
   Future<void> init() async {
-    await Hive.initFlutter();
-    _box = await Hive.openBox(_todosBoxName);
-    await _migrateIfNeeded();
-  }
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      _dataFile = File('${directory.path}/$_dataFileName');
 
-  Future<void> _migrateIfNeeded() async {
-    final version = _box!.get(_versionKey, defaultValue: 1) as int;
-    if (version < _currentVersion) {
-      await _migrateFromV1();
-      await _box!.put(_versionKey, _currentVersion);
-    }
-  }
-
-  Future<void> _migrateFromV1() async {
-    final rawData = _box!.get(_todosKey);
-    if (rawData == null || rawData is! List) return;
-
-    final migratedTodos = <Map<String, dynamic>>[];
-
-    for (var json in rawData) {
-      if (json is! Map) continue;
-
-      final migratedTodo = <String, dynamic>{
-        'id': json['id'] ?? const Uuid().v4(),
-        'title': json['title'],
-        'description': json['description'] ?? '',
-        'isCompleted': json['isCompleted'] ?? false,
-        'priority': json['priority'] ?? 'Thường',
-        'createdAt': json['createdAt'] ?? DateTime.now().toIso8601String(),
-        'dueDate': null,
-        'category': null,
-      };
-
-      // Migrate checklist items
-      if (json['checklist'] is List) {
-        final checklistItems = <Map<String, dynamic>>[];
-        for (var item in (json['checklist'] as List)) {
-          if (item is Map) {
-            checklistItems.add({
-              'id': const Uuid().v4(),
-              'title': item['title'] ?? '',
-              'isCompleted': item['isCompleted'] ?? false,
-              'children': null,
-            });
-          }
+      if (await _dataFile!.exists()) {
+        final content = await _dataFile!.readAsString();
+        if (content.isNotEmpty) {
+          _data = jsonDecode(content) as Map<String, dynamic>;
         }
-        migratedTodo['checklist'] = checklistItems;
       } else {
-        migratedTodo['checklist'] = [];
+        _data = {
+          'todos': [],
+          'tags': [],
+          'fontScale': 1.0,
+        };
+        await _saveToFile();
       }
-
-      migratedTodos.add(migratedTodo);
+      debugPrint('StorageService initialized: ${_dataFile!.path}');
+    } catch (e) {
+      debugPrint('Error initializing storage: $e');
+      _data = {
+        'todos': [],
+        'tags': [],
+        'fontScale': 1.0,
+      };
     }
-
-    await _box!.put(_todosKey, migratedTodos);
   }
 
+  Future<void> _saveToFile() async {
+    if (_dataFile == null) return;
+    try {
+      final jsonString = const JsonEncoder.withIndent('  ').convert(_data);
+      await _dataFile!.writeAsString(jsonString, flush: true);
+      debugPrint('Data saved to file successfully');
+    } catch (e) {
+      debugPrint('Error saving to file: $e');
+    }
+  }
+
+  // Todos
   Future<void> saveTodos(List<Todo> todos) async {
     try {
-      final jsonList = todos.map((todo) => todo.toJson()).toList();
-      await _box!.put(_todosKey, jsonList);
-      await _box!.flush();
+      _data['todos'] = todos.map((todo) => todo.toJson()).toList();
+      await _saveToFile();
     } catch (e) {
-      debugPrint('Error saving todos: \$e');
+      debugPrint('Error saving todos: $e');
     }
   }
 
   List<Todo> loadTodos() {
     try {
-      final jsonList = _box!.get(_todosKey, defaultValue: []) as List;
-      return jsonList
+      final todosList = _data['todos'] as List<dynamic>? ?? [];
+      return todosList
           .map((json) => Todo.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      debugPrint('Error loading todos: \$e');
+      debugPrint('Error loading todos: $e');
       return [];
     }
   }
 
-  // Tags persistence
+  // Tags
   Future<void> saveTags(List<Tag> tags) async {
     try {
-      final jsonList = tags.map((tag) => tag.toJson()).toList();
-      await _box!.put(_tagsKey, jsonList);
-      await _box!.flush();
+      _data['tags'] = tags.map((tag) => tag.toJson()).toList();
+      await _saveToFile();
     } catch (e) {
-      debugPrint('Error saving tags: \$e');
+      debugPrint('Error saving tags: $e');
     }
   }
 
   List<Tag> loadTags() {
     try {
-      final jsonList = _box!.get(_tagsKey, defaultValue: []) as List;
-      return jsonList
+      final tagsList = _data['tags'] as List<dynamic>? ?? [];
+      return tagsList
           .map((json) => Tag.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      debugPrint('Error loading tags: \$e');
+      debugPrint('Error loading tags: $e');
       return [];
     }
   }
 
-  // Font scale persistence
+  // Font scale
   Future<void> saveFontScale(double scale) async {
     try {
-      await _box!.put(_fontScaleKey, scale);
-      await _box!.flush();
+      _data['fontScale'] = scale;
+      await _saveToFile();
     } catch (e) {
       debugPrint('Error saving font scale: $e');
     }
@@ -129,18 +107,27 @@ class StorageService {
 
   double loadFontScale() {
     try {
-      return _box!.get(_fontScaleKey, defaultValue: 1.0) as double;
+      return (_data['fontScale'] as num?)?.toDouble() ?? 1.0;
     } catch (e) {
       debugPrint('Error loading font scale: $e');
       return 1.0;
     }
   }
 
+  // Clear all data
   Future<void> clear() async {
-    await _box!.clear();
+    _data = {
+      'todos': [],
+      'tags': [],
+      'fontScale': 1.0,
+    };
+    await _saveToFile();
   }
 
+  // Get file path for debugging
+  String? getFilePath() => _dataFile?.path;
+
   Future<void> close() async {
-    await _box?.close();
+    // Nothing to close for file-based storage
   }
 }
